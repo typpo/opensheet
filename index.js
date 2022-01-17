@@ -3,11 +3,17 @@ addEventListener('fetch', (event) => {
 });
 
 async function handleRequest(event) {
+  if (event.request.headers.get('authorization') !== `Basic ${AUTH_KEY}`) {
+    return new Response('unauthorized', {
+      status: 401,
+    });
+  }
+
   const url = new URL(event.request.url);
 
   if (url.pathname === '/') {
-    return new Response('', {
-      status: 204,
+    return new Response('it works', {
+      status: 200,
     });
   }
 
