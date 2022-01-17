@@ -1,29 +1,30 @@
-addEventListener("fetch", (event) => {
+addEventListener('fetch', (event) => {
   event.respondWith(handleRequest(event));
 });
 
 async function handleRequest(event) {
   const url = new URL(event.request.url);
 
-  if (url.pathname === "/") {
-    return new Response("", {
-      status: 302,
-      headers: {
-        location: "https://github.com/benborgers/opensheet#readme",
-      },
+  if (url.pathname === '/') {
+    return new Response('', {
+      status: 204,
     });
   }
 
   let [id, sheet, ...otherParams] = url.pathname
     .slice(1)
-    .split("/")
+    .split('/')
     .filter((x) => x);
 
-  if (!id || !sheet || otherParams.length > 0) {
-    return error("URL format is /spreadsheet_id/sheet_name", 404);
+  if (!id || otherParams.length > 0) {
+    return error('URL format is /spreadsheet_id/<sheet name or index>', 404);
+  }
+  if (typeof sheet === 'undefined') {
+    // Default to first sheet.
+    sheet = '0';
   }
 
-  const cacheKey = `https://opensheet.elk.sh/${id}/${sheet}`;
+  const cacheKey = `https://127.0.0.1/${id}/${sheet}`;
   const cache = caches.default;
   const cachedResponse = await cache.match(cacheKey);
   if (cachedResponse) {
@@ -33,27 +34,24 @@ async function handleRequest(event) {
     console.log(`Cache miss: ${cacheKey}`);
   }
 
-  sheet = decodeURIComponent(sheet.replace(/\+/g, " "));
+  sheet = decodeURIComponent(sheet.replace(/\+/g, ' '));
 
   if (!isNaN(sheet)) {
-    if (parseInt(sheet) === 0) {
-      return error("For this API, sheet numbers start at 1");
-    }
-
     const sheetData = await (
-      await fetch(
-        `https://sheets.googleapis.com/v4/spreadsheets/${id}?key=${GOOGLE_API_KEY}`
-      )
+      await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${id}?key=${GOOGLE_API_KEY}`)
     ).json();
 
     if (sheetData.error) {
+      console.error('Error loading doc:', sheetData.error.message);
       return error(sheetData.error.message);
     }
+    console.log('sheetdata', sheetData);
 
-    const sheetIndex = parseInt(sheet) - 1;
+    const sheetIndex = parseInt(sheet);
     const sheetWithThisIndex = sheetData.sheets[sheetIndex];
 
     if (!sheetWithThisIndex) {
+      console.error(`There is no sheet number ${sheet}`);
       return error(`There is no sheet number ${sheet}`);
     }
 
@@ -62,11 +60,12 @@ async function handleRequest(event) {
 
   const result = await (
     await fetch(
-      `https://sheets.googleapis.com/v4/spreadsheets/${id}/values/${sheet}?key=${GOOGLE_API_KEY}`
+      `https://sheets.googleapis.com/v4/spreadsheets/${id}/values/${sheet}?key=${GOOGLE_API_KEY}`,
     )
   ).json();
 
   if (result.error) {
+    console.error('Error loading sheet:', result.error.message);
     return error(result.error.message);
   }
 
@@ -85,9 +84,9 @@ async function handleRequest(event) {
 
   const apiResponse = new Response(JSON.stringify(rows), {
     headers: {
-      "Content-Type": "application/json",
-      "Cache-Control": "s-maxage=30",
-      "Access-Control-Allow-Origin": "*",
+      'Content-Type': 'application/json',
+      'Cache-Control': 's-maxage=30',
+      'Access-Control-Allow-Origin': '*',
     },
   });
 
@@ -100,8 +99,8 @@ const error = (message, status = 400) => {
   return new Response(JSON.stringify({ error: message }), {
     status: status,
     headers: {
-      "Content-Type": "application/json",
-      "Access-Control-Allow-Origin": "*",
+      'Content-Type': 'application/json',
+      'Access-Control-Allow-Origin': '*',
     },
   });
 };

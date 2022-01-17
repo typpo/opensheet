@@ -4,11 +4,15 @@
   "scripts": {
     "dev": "wrangler dev",
     "deploy": "wrangler publish",
-    "add-env-variables": "wrangler secret put GOOGLE_API_KEY"
+    "add-env-variables": "wrangler secret put GOOGLE_API_KEY",
+    "format": "prettier --single-quote --trailing-comma all --print-width 100 --write \"**/*.js\""
   },
   "author": "Ben Borgers <ben@elk.sh>",
   "license": "ISC",
   "dependencies": {
     "@cloudflare/wrangler": "^1.19.7"
+  },
+  "devDependencies": {
+    "prettier": "^2.5.1"
   }
 }
