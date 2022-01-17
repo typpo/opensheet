@@ -98,10 +98,12 @@ async function handleRequest(event) {
     // rows,
     cols,
   };
+
+  const maxAge = event.request.headers.get('x-request-maxage');
   const apiResponse = new Response(JSON.stringify(respData), {
     headers: {
       'Content-Type': 'application/json',
-      'Cache-Control': 's-maxage=30',
+      'Cache-Control': `s-maxage=${maxAge}`,
       'Access-Control-Allow-Origin': '*',
     },
   });
