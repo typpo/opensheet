@@ -76,6 +76,7 @@ async function handleRequest(event) {
   }
 
   const rows = [];
+  const cols = {};
 
   const rawRows = result.values || [];
   const headers = rawRows.shift();
@@ -83,12 +84,21 @@ async function handleRequest(event) {
   rawRows.forEach((row) => {
     const rowData = {};
     row.forEach((item, index) => {
-      rowData[headers[index]] = item;
+      const col = headers[index];
+      rowData[col] = item;
+      if (!cols[col]) {
+        cols[col] = [];
+      }
+      cols[col].push(item);
     });
     rows.push(rowData);
   });
 
-  const apiResponse = new Response(JSON.stringify(rows), {
+  const respData = {
+    // rows,
+    cols,
+  };
+  const apiResponse = new Response(JSON.stringify(respData), {
     headers: {
       'Content-Type': 'application/json',
       'Cache-Control': 's-maxage=30',
