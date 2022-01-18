@@ -1,3 +1,5 @@
+const SPREADSHEET_URL_REGEX = /.*?\/d\/([^\/]+)(.*gid=(\d+))?/g;
+
 addEventListener('fetch', (event) => {
   event.respondWith(handleRequest(event));
 });
@@ -11,20 +13,23 @@ async function handleRequest(event) {
 
   const url = new URL(event.request.url);
 
-  if (url.pathname === '/') {
-    return new Response('it works', {
-      status: 200,
+  const { searchParams } = url;
+  let id = searchParams.get('docId');
+  let sheet = searchParams.get('sheet');
+  const sheetUrl = searchParams.get('sheetUrl');
+
+  if (!id && !sheetUrl) {
+    return error('Must provide sheet id or url', 404);
+  }
+
+  if (sheetUrl) {
+    const matches = sheetUrl.matchAll(SPREADSHEET_URL_REGEX);
+    [...matches].forEach((match) => {
+      id = match[1];
+      sheet = match[3];
     });
   }
 
-  let [id, sheet, ...otherParams] = url.pathname
-    .slice(1)
-    .split('/')
-    .filter((x) => x);
-
-  if (!id || otherParams.length > 0) {
-    return error('URL format is /spreadsheet_id/<sheet name or index>', 404);
-  }
   if (typeof sheet === 'undefined') {
     // Default to first sheet.
     sheet = '0';
@@ -51,16 +56,21 @@ async function handleRequest(event) {
       console.error('Error loading doc:', sheetData.error.message);
       return error(sheetData.error.message);
     }
-    console.log('sheetdata', sheetData);
 
-    const sheetIndex = parseInt(sheet);
-    const sheetWithThisIndex = sheetData.sheets[sheetIndex];
-
+    const sheetNum = parseInt(sheet, 10);
+    let sheetWithThisIndex = sheetData.sheets[sheetNum];
     if (!sheetWithThisIndex) {
-      console.error(`There is no sheet number ${sheet}`);
-      return error(`There is no sheet number ${sheet}`);
+      // The number is not an index... let's try gid
+      sheetWithThisIndex = sheetData.sheets.filter(
+        (sheetDatum) => sheetDatum.properties.sheetId === sheetNum,
+      )[0];
+      if (!sheetWithThisIndex) {
+        console.error(`There is no sheet number ${sheet}`);
+        return error(`There is no sheet number ${sheet}`);
+      }
     }
 
+    // This works because Google Sheets enforces uniqueness in sheet title.
     sheet = sheetWithThisIndex.properties.title;
   }
 
