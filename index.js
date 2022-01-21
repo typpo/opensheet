@@ -30,7 +30,7 @@ async function handleRequest(event) {
     });
   }
 
-  if (typeof sheet === 'undefined') {
+  if (sheet == null) {
     // Default to first sheet.
     sheet = '0';
   }
