@@ -1,5 +1,13 @@
 const SPREADSHEET_URL_REGEX = /.*?\/d\/([^\/]+)(.*gid=(\d+))?/g;
 
+function getValueOr0(x) {
+  const parsed = parseInt(x, 10);
+  if (isNaN(parsed)) {
+    return 0;
+  }
+  return parsed;
+}
+
 addEventListener('fetch', (event) => {
   event.respondWith(handleRequest(event));
 });
@@ -17,6 +25,8 @@ async function handleRequest(event) {
   let id = searchParams.get('docId');
   let sheet = searchParams.get('sheet');
   const sheetUrl = searchParams.get('sheetUrl');
+  const rowLimit = getValueOr0(searchParams.get('rowLimit'));
+  const rowOffset = getValueOr0(searchParams.get('rowOffset'));
 
   if (!id && !sheetUrl) {
     return error('Must provide sheet id or url', 404);
@@ -88,10 +98,25 @@ async function handleRequest(event) {
   const rows = [];
   const cols = {};
 
-  const rawRows = result.values || [];
+  let rawRows = result.values || [];
   const headers = rawRows.shift();
 
-  rawRows.forEach((row) => {
+  if (rowLimit > 0) {
+    rawRows = rawRows.slice(rowOffset);
+  } else if (rowLimit < 0) {
+    rawRows = rawRows.slice(0, rawRows.length + rowOffset);
+  }
+
+  const numRows = rawRows.length;
+  const rowStartIndex = Math.max(0, rowLimit < 0 ? rowLimit + numRows : 0);
+  const rowEndIndex = Math.min(numRows - 1, rowLimit <= 0 ? numRows : rowLimit - 1);
+  rawRows.every((row, idx) => {
+    if (idx < rowStartIndex) {
+      return true;
+    }
+    if (idx > rowEndIndex) {
+      return false;
+    }
     const rowData = {};
     row.forEach((item, index) => {
       const col = headers[index];
@@ -102,6 +127,7 @@ async function handleRequest(event) {
       cols[col].push(item);
     });
     rows.push(rowData);
+    return true;
   });
 
   const respData = {
