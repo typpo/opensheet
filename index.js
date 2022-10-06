@@ -54,12 +54,18 @@ async function handleRequest(event) {
     sheet = '0';
   }
 
-  const cacheKey = `https://127.0.0.1/${id}/${sheet}`;
+  const cacheKey = new Request(url.toString(), event.request);
   const cache = caches.default;
   const cachedResponse = await cache.match(cacheKey);
   if (cachedResponse) {
-    console.log(`Serving from cache: ${cacheKey}`);
-    return cachedResponse;
+    console.log(`Serving from cache: ${url.toString()}`);
+    const cachedData = await cachedResponse.json();
+    return new Response(JSON.stringify(cachedData), {
+      headers: {
+        'content-type': 'application/json',
+        'x-opensheet-cache-status': 'HIT',
+      },
+    });
   } else {
     console.log(`Cache miss: ${cacheKey}`);
   }
@@ -153,6 +159,7 @@ async function handleRequest(event) {
     },
   });
 
+  // Reference https://developers.cloudflare.com/workers/examples/cache-api/
   event.waitUntil(cache.put(cacheKey, apiResponse.clone()));
 
   return apiResponse;

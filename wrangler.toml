@@ -5,8 +5,8 @@ compatibility_date = "2022-01-14"
 main = "index.js"
 
 # Uncomment if you don’t have a custom domain.
-workers_dev = true
+# workers_dev = true
 
 # For custom domain — comment out if you don’t have a custom domain.
-# zone_id = "bb3900bc46e7f1f8ff6820941737ff05"
-# route = "opensheet.elk.sh/*"
+zone_id = "4668fa867b698deeea0e8a7d7f362d43"
+route = "https://opensheet.quickchart.io/*"
