@@ -64,6 +64,7 @@ async function handleRequest(event) {
       headers: {
         'content-type': 'application/json',
         'x-opensheet-cache-status': 'HIT',
+        'Access-Control-Allow-Origin': '*',
       },
     });
   } else {
