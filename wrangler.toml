@@ -2,6 +2,7 @@ name = "opensheet"
 account_id = "2d93479a0c78707f4517a9335fba6388"
 type = "webpack"
 compatibility_date = "2022-01-14"
+main = "index.js"
 
 # Uncomment if you don’t have a custom domain.
 workers_dev = true

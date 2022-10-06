@@ -1,3 +1,5 @@
+const {handleOptions} = require('./cors');
+
 const SPREADSHEET_URL_REGEX = /.*?\/d\/([^\/]+)(.*gid=(\d+))?/g;
 
 function getValueOr0(x) {
@@ -13,7 +15,14 @@ addEventListener('fetch', (event) => {
 });
 
 async function handleRequest(event) {
-  if (event.request.headers.get('authorization') !== `Basic ${AUTH_KEY}`) {
+  if (event.request.method === 'OPTIONS') {
+    return handleOptions(event.request);
+  }
+
+  let isPublic = false;
+  if (event.request.headers.get('authorization') === `Basic ${PUBLIC_AUTH_KEY}`) {
+    isPublic = true;
+  } else if (event.request.headers.get('authorization') !== `Basic ${AUTH_KEY}`) {
     return new Response('unauthorized', {
       status: 401,
     });
@@ -135,7 +144,7 @@ async function handleRequest(event) {
     cols,
   };
 
-  const maxAge = event.request.headers.get('x-request-maxage');
+  const maxAge = isPublic ? 60 : event.request.headers.get('x-request-maxage');
   const apiResponse = new Response(JSON.stringify(respData), {
     headers: {
       'Content-Type': 'application/json',
@@ -149,12 +158,12 @@ async function handleRequest(event) {
   return apiResponse;
 }
 
-const error = (message, status = 400) => {
+function error(message, status = 400) {
   return new Response(JSON.stringify({ error: message }), {
-    status: status,
+    status,
     headers: {
       'Content-Type': 'application/json',
       'Access-Control-Allow-Origin': '*',
     },
   });
-};
+}
